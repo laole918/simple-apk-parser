@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Simple APK Parser Demo</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f1e8;
+        --panel: rgba(255, 252, 246, 0.88);
+        --text: #1f1b16;
+        --muted: #6e6254;
+        --accent: #0a7c66;
+        --accent-strong: #064f42;
+        --border: rgba(31, 27, 22, 0.12);
+        --shadow: 0 24px 60px rgba(62, 48, 25, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(214, 167, 92, 0.26), transparent 30%),
+          radial-gradient(circle at bottom right, rgba(10, 124, 102, 0.18), transparent 26%),
+          linear-gradient(180deg, #f8f5ef 0%, var(--bg) 100%);
+      }
+
+      main {
+        width: min(920px, calc(100% - 32px));
+        margin: 40px auto;
+        padding: 28px;
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        background: var(--panel);
+        backdrop-filter: blur(14px);
+        box-shadow: var(--shadow);
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(2rem, 3.2vw, 3rem);
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .controls {
+        display: grid;
+        gap: 16px;
+        margin-top: 28px;
+      }
+
+      .tabs {
+        display: inline-flex;
+        gap: 18px;
+        padding-bottom: 2px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .tab {
+        position: relative;
+        padding: 0 2px 12px;
+        border: 0;
+        color: var(--muted);
+        background: transparent;
+        cursor: pointer;
+        font: inherit;
+      }
+
+      .tab.is-active {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .tab.is-active::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        bottom: -3px;
+        left: 0;
+        height: 3px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      }
+
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .panel {
+        display: none;
+      }
+
+      .panel.is-active {
+        display: block;
+      }
+
+      .path-display,
+      input[type="url"] {
+        flex: 1 1 320px;
+        min-width: 0;
+        padding: 14px 16px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.8);
+        font: inherit;
+        line-height: 1.2;
+      }
+
+      .path-display {
+        display: flex;
+        align-items: center;
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      button {
+        padding: 14px 18px;
+        border: 0;
+        border-radius: 16px;
+        color: white;
+        background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+        cursor: pointer;
+      }
+
+      label {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        color: var(--muted);
+      }
+
+      #iconWrap {
+        min-height: 88px;
+        margin-top: 24px;
+      }
+
+      #iconWrap img {
+        width: 88px;
+        height: 88px;
+        border-radius: 22px;
+        box-shadow: 0 18px 28px rgba(22, 54, 47, 0.18);
+      }
+
+      pre {
+        overflow: auto;
+        margin-top: 20px;
+        padding: 20px;
+        border-radius: 20px;
+        background: #1d241f;
+        color: #edf6f0;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Simple APK Parser</h1>
+      <p>Parse APK metadata and signature details in the browser.</p>
+
+      <section class="controls">
+        <div class="tabs" role="tablist" aria-label="APK input mode">
+          <button class="tab is-active" id="fileTab" type="button" role="tab" aria-selected="true">
+            Local File
+          </button>
+          <button class="tab" id="urlTab" type="button" role="tab" aria-selected="false">
+            Remote URL
+          </button>
+        </div>
+
+        <div class="panel is-active" id="filePanel" role="tabpanel">
+          <div class="row">
+            <input type="file" id="apkFile" accept=".apk">
+            <div class="path-display" id="apkFilePath">Choose a local APK file</div>
+            <button id="parseFileBtn" type="button">Choose File</button>
+          </div>
+        </div>
+
+        <div class="panel" id="urlPanel" role="tabpanel">
+          <div class="row">
+            <input type="url" id="apkUrl" placeholder="https://example.com/app.apk">
+            <button id="parseUrlBtn" type="button">Parse URL</button>
+          </div>
+        </div>
+
+        <label>
+          <input type="checkbox" id="loadResources" checked>
+          Resolve resources.arsc for app name and icon
+        </label>
+      </section>
+
+      <div id="iconWrap"></div>
+      <pre id="output">Choose a local APK or paste a remote APK URL.</pre>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

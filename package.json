@@ -1,0 +1,34 @@
+{
+  "name": "simple-apk-parser",
+  "version": "0.1.0",
+  "description": "Parse APK metadata and signatures in Node.js and browsers.",
+  "type": "module",
+  "main": "./dist/simple-apk-parser.js",
+  "module": "./dist/simple-apk-parser.js",
+  "browser": "./dist/simple-apk-parser.browser.js",
+  "exports": {
+    ".": {
+      "browser": "./dist/simple-apk-parser.browser.js",
+      "import": "./dist/simple-apk-parser.js",
+      "default": "./dist/simple-apk-parser.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-terser": "^1.0.0",
+    "rollup": "^4.18.0",
+    "vitest": "^2.0.5"
+  }
+}
