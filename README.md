@@ -2,6 +2,8 @@
 
 Parse APK metadata and signature information in Node.js and modern browsers.
 
+This project was developed entirely with AI assistance.
+
 ## Features
 
 - Parse APK files in browsers with `File` / `Blob`
