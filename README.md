@@ -49,6 +49,56 @@ const result = await parseApkUrl("https://example.com/app.apk");
 console.log(result.packageName);
 ```
 
+### `createBrowserParser(options?)`
+
+Create a browser parser with optional runtime overrides. This is the recommended way to inject a custom `digest()` fallback.
+
+```js
+import { createBrowserParser } from "simple-apk-parser";
+import { sha1 } from "@noble/hashes/sha1";
+import { sha256 } from "@noble/hashes/sha256";
+
+const parser = createBrowserParser({
+  digest(algorithm, data) {
+    if (algorithm === "SHA-1") return sha1(data);
+    if (algorithm === "SHA-256") return sha256(data);
+    throw new Error(`Unsupported digest algorithm: ${algorithm}`);
+  },
+});
+
+const result = await parser.parseApkFile(file);
+```
+
+### `createNodeParser(options?)`
+
+Create a Node.js parser. In most Node.js environments you do not need to pass anything, but the hook remains available for advanced overrides.
+
+```js
+import { createNodeParser } from "simple-apk-parser";
+
+const parser = createNodeParser();
+```
+
+### `createParser(runtime)`
+
+Advanced API for building a parser from a fully custom runtime.
+
+Node.js low-level entry:
+
+```js
+import { createNodeRuntime, createParser } from "simple-apk-parser";
+
+const parser = createParser(createNodeRuntime());
+```
+
+Browser low-level entry:
+
+```js
+import { createBrowserRuntime, createParser } from "simple-apk-parser";
+
+const parser = createParser(createBrowserRuntime());
+```
+
 ## Options
 
 ### `loadResources`
@@ -88,6 +138,21 @@ const result = await parseApkFile(file, {
 ```
 
 When `locale` is set, the parser prefers exact language-region matches first, then same-language fallbacks, then non-localized resources.
+
+## `digest()` contract
+
+When you provide `digest`, the parser calls it as:
+
+```js
+await digest(algorithm, data)
+```
+
+- `algorithm` is currently `"SHA-1"` or `"SHA-256"`
+- `data` is a `Uint8Array`
+- the return value may be a `Uint8Array`, `ArrayBuffer`, or a hex string
+- hex strings may be uppercase or lowercase; the parser normalizes them to lowercase internally
+
+If `digest` is omitted, the parser falls back to `crypto.subtle.digest()` when available. If both are provided, `digest` wins.
 
 ## Result shape
 
@@ -137,8 +202,10 @@ The browser runtime expects these APIs:
 - `Blob`
 - `TextDecoder`
 - `TextEncoder`
-- `crypto.subtle`
+- `crypto.subtle` or a custom `digest(algorithm, data)` implementation
 - `DecompressionStream` for deflate-raw ZIP entries
+
+In browsers, `crypto.subtle` is usually only available in a secure context such as `https://` or `http://localhost`. If you run the page from an insecure origin and `crypto.subtle` is missing, you can inject a third-party digest implementation instead.
 
 ## Important limits
 

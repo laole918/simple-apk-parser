@@ -6,14 +6,18 @@ import { existsSync } from "node:fs";
 import { createNodeRuntime } from "../../src/runtime/node.js";
 import { createBrowserRuntime } from "../../src/runtime/browser.js";
 import { createBaseRuntime } from "../../src/runtime/shared.js";
-import { parseApkFile, parseApkUrl } from "../../src/index.js";
+import { createNodeParser, parseApkFile, parseApkUrl } from "../../src/index.js";
+import { createBrowserParser } from "../../src/browser.js";
 import { createZipTools } from "../../src/core/zip.js";
 import { createResourceTools } from "../../src/core/resources.js";
+import { digestHexWithRuntime } from "../../src/core/binary.js";
 
 describe("public API", () => {
   it("exposes the public functions", () => {
     expect(typeof parseApkFile).toBe("function");
     expect(typeof parseApkUrl).toBe("function");
+    expect(typeof createNodeParser).toBe("function");
+    expect(typeof createBrowserParser).toBe("function");
   });
 
   it("defaults to loading resources and supports disabling them", () => {
@@ -66,6 +70,96 @@ describe("public API", () => {
 
     expect(runtime.fetch).toBe(injectedFetch);
     expect(() => runtime.fetch()).toThrow("injected fetch called");
+  });
+
+  it("accepts a custom digest implementation when crypto.subtle is unavailable", async () => {
+    const runtime = createBaseRuntime({
+      Blob,
+      TextDecoder,
+      TextEncoder,
+      fetch: async () => {
+        throw new Error("fetch should not be called");
+      },
+      inflateRaw: async () => {
+        throw new Error("inflateRaw should not be called");
+      },
+      crypto: undefined,
+      digest: async (algorithm, data) => {
+        expect(algorithm).toBe("SHA-1");
+        expect(data).toBeInstanceOf(Uint8Array);
+        return new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
+      },
+    });
+
+    const parser = createParser(runtime);
+    expect(parser).toMatchObject({
+      parseApkFile: expect.any(Function),
+      parseApkUrl: expect.any(Function),
+    });
+
+    await expect(digestHexWithRuntime(runtime, "SHA-1", new Uint8Array([1, 2, 3]))).resolves.toBe("deadbeef");
+  });
+
+  it("normalizes custom digest hex strings", async () => {
+    const runtime = createBaseRuntime({
+      digest: async () => "AABBCCDD",
+      Blob,
+      TextDecoder,
+      TextEncoder,
+      fetch,
+      inflateRaw: async data => data,
+    });
+
+    const parser = createParser(runtime);
+    expect(parser).toBeTruthy();
+
+    await expect(digestHexWithRuntime(runtime, "SHA-1", new Uint8Array([1, 2, 3]))).resolves.toBe("aabbccdd");
+  });
+
+  it("prefers digest() over crypto.subtle when both are available", async () => {
+    const runtime = createBaseRuntime({
+      Blob,
+      TextDecoder,
+      TextEncoder,
+      fetch,
+      inflateRaw: async data => data,
+      digest: async () => "AAAAAAAA",
+      crypto: {
+        subtle: {
+          digest: async () => new Uint8Array([0xbb, 0xbb, 0xbb, 0xbb]),
+        },
+      },
+    });
+
+    await expect(digestHexWithRuntime(runtime, "SHA-256", new Uint8Array([1, 2, 3]))).resolves.toBe("aaaaaaaa");
+  });
+
+  it("rejects invalid custom digest return values", async () => {
+    const runtime = createBaseRuntime({
+      Blob,
+      TextDecoder,
+      TextEncoder,
+      fetch,
+      inflateRaw: async data => data,
+      digest: async () => ({ bad: true }),
+    });
+
+    await expect(digestHexWithRuntime(runtime, "SHA-1", new Uint8Array([1, 2, 3]))).rejects.toThrow(
+      "Custom digest() must return a hex string, ArrayBuffer, or typed array"
+    );
+  });
+
+  it("throws a clearer error when neither crypto.subtle nor custom digest is available", () => {
+    expect(() => createParser(createBaseRuntime({
+      Blob,
+      TextDecoder,
+      TextEncoder,
+      fetch,
+      inflateRaw: async data => data,
+      crypto: undefined,
+    }))).toThrow(
+      "A digest implementation is required. Provide runtime.digest(), or ensure crypto.subtle is available."
+    );
   });
 
   it("decodes packed three-letter locale codes from resource configs", () => {

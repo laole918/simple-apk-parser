@@ -2,7 +2,7 @@ import {
   ASN1Reader,
   ByteReader,
   bytesToHex,
-  digestHex as digestHexWithCrypto,
+  digestHexWithRuntime,
   md5Hex,
   readU32LE,
   readU64LE,
@@ -30,7 +30,7 @@ const OID_TO_DN = {
 
 export function createSignatureTools({ runtime, utf8Decoder, zipTools }) {
   async function digestHex(algorithm, data) {
-    return digestHexWithCrypto(runtime.crypto.subtle, algorithm, data);
+    return digestHexWithRuntime(runtime, algorithm, data);
   }
 
   function parseIdValuePairs(block) {

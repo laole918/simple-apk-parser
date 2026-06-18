@@ -48,9 +48,45 @@ export function bytesToHex(bytes) {
     .join("");
 }
 
+function isHexString(value) {
+  return typeof value === "string" && value.length % 2 === 0 && /^[0-9a-f]+$/i.test(value);
+}
+
+function normalizeDigestResult(result) {
+  if (typeof result === "string") {
+    if (!isHexString(result)) {
+      throw new Error("Custom digest() must return a hex string, ArrayBuffer, or typed array");
+    }
+
+    return result.toLowerCase();
+  }
+
+  if (result instanceof ArrayBuffer) {
+    return bytesToHex(new Uint8Array(result));
+  }
+
+  if (ArrayBuffer.isView(result)) {
+    return bytesToHex(new Uint8Array(result.buffer, result.byteOffset, result.byteLength));
+  }
+
+  throw new Error("Custom digest() must return a hex string, ArrayBuffer, or typed array");
+}
+
 export async function digestHex(cryptoSubtle, algorithm, data) {
   const digest = await cryptoSubtle.digest(algorithm, data);
   return bytesToHex(new Uint8Array(digest));
+}
+
+export async function digestHexWithRuntime(runtime, algorithm, data) {
+  if (typeof runtime?.digest === "function") {
+    return normalizeDigestResult(await runtime.digest(algorithm, data));
+  }
+
+  if (runtime?.crypto?.subtle) {
+    return digestHex(runtime.crypto.subtle, algorithm, data);
+  }
+
+  throw new Error("A digest implementation is required in the parser runtime");
 }
 
 export function md5Hex(data) {

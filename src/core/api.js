@@ -6,8 +6,10 @@ export function createParser(runtime) {
   if (!runtime?.Blob) {
     throw new Error("Blob is required in the parser runtime");
   }
-  if (!runtime?.crypto?.subtle) {
-    throw new Error("crypto.subtle is required in the parser runtime");
+  if (typeof runtime?.digest !== "function" && !runtime?.crypto?.subtle) {
+    throw new Error(
+      "A digest implementation is required. Provide runtime.digest(), or ensure crypto.subtle is available."
+    );
   }
   if (typeof runtime?.fetch !== "function") {
     throw new Error("fetch is required in the parser runtime");
