@@ -162,6 +162,52 @@ describe("public API", () => {
     );
   });
 
+  it("does not instantiate the default browser parser during module import", async () => {
+    const originalDescriptor = Object.getOwnPropertyDescriptor(globalThis, "crypto");
+    Object.defineProperty(globalThis, "crypto", {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    });
+
+    try {
+      const browserModule = await import("../../src/browser.js?lazy-browser-import");
+
+      expect(typeof browserModule.parseApkFile).toBe("function");
+      expect(typeof browserModule.parseApkUrl).toBe("function");
+      expect(typeof browserModule.createBrowserParser).toBe("function");
+    } finally {
+      if (originalDescriptor) {
+        Object.defineProperty(globalThis, "crypto", originalDescriptor);
+      } else {
+        delete globalThis.crypto;
+      }
+    }
+  });
+
+  it("does not instantiate the default node parser during module import", async () => {
+    const originalDescriptor = Object.getOwnPropertyDescriptor(globalThis, "crypto");
+    Object.defineProperty(globalThis, "crypto", {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    });
+
+    try {
+      const nodeModule = await import("../../src/index.js?lazy-node-import");
+
+      expect(typeof nodeModule.parseApkFile).toBe("function");
+      expect(typeof nodeModule.parseApkUrl).toBe("function");
+      expect(typeof nodeModule.createNodeParser).toBe("function");
+    } finally {
+      if (originalDescriptor) {
+        Object.defineProperty(globalThis, "crypto", originalDescriptor);
+      } else {
+        delete globalThis.crypto;
+      }
+    }
+  });
+
   it("decodes packed three-letter locale codes from resource configs", () => {
     const resourceTools = createResourceTools({
       runtime: createNodeRuntime(),

@@ -5,8 +5,18 @@ export function createNodeParser(options = {}) {
   return createParser(createNodeRuntime(options));
 }
 
-const parser = createNodeParser();
+let defaultParser;
+
+function getDefaultParser() {
+  defaultParser ||= createNodeParser();
+  return defaultParser;
+}
 
 export { createParser, createNodeRuntime };
-export const parseApkFile = parser.parseApkFile;
-export const parseApkUrl = parser.parseApkUrl;
+export function parseApkFile(...args) {
+  return getDefaultParser().parseApkFile(...args);
+}
+
+export function parseApkUrl(...args) {
+  return getDefaultParser().parseApkUrl(...args);
+}

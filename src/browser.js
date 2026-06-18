@@ -5,8 +5,18 @@ export function createBrowserParser(options = {}) {
   return createParser(createBrowserRuntime(options));
 }
 
-const parser = createBrowserParser();
+let defaultParser;
+
+function getDefaultParser() {
+  defaultParser ||= createBrowserParser();
+  return defaultParser;
+}
 
 export { createBrowserRuntime, createParser };
-export const parseApkFile = parser.parseApkFile;
-export const parseApkUrl = parser.parseApkUrl;
+export function parseApkFile(...args) {
+  return getDefaultParser().parseApkFile(...args);
+}
+
+export function parseApkUrl(...args) {
+  return getDefaultParser().parseApkUrl(...args);
+}
