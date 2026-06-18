@@ -1,6 +1,6 @@
 {
   "name": "simple-apk-parser",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Parse APK metadata and signatures in Node.js and browsers.",
   "type": "module",
   "main": "./dist/simple-apk-parser.js",
