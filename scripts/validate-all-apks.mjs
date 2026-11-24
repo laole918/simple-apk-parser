@@ -84,16 +84,22 @@ function parseApkSigner(stdout) {
     if (!line) return false;
     return line.slice(prefix.length).trim() === "true";
   };
-  const certSha256Line = lines.find(line => line.startsWith("Signer #1 certificate SHA-256 digest:"));
-  const certDnLine = lines.find(line => line.startsWith("Signer #1 certificate DN:"));
+  const certValue = field => {
+    const prefixes = [`V3.0 Signer: certificate ${field}:`, `Signer #1 certificate ${field}:`];
+    for (const prefix of prefixes) {
+      const line = lines.find(item => item.startsWith(prefix));
+      if (line) return line.slice(prefix.length).trim();
+    }
+    return "";
+  };
 
   return {
     v1: findBool("Verified using v1 scheme (JAR signing):"),
     v2: findBool("Verified using v2 scheme (APK Signature Scheme v2):"),
     v3: findBool("Verified using v3 scheme (APK Signature Scheme v3):") ||
       findBool("Verified using v3.1 scheme (APK Signature Scheme v3.1):"),
-    certificateSha256: certSha256Line ? certSha256Line.split(": ").slice(1).join(": ").trim().toLowerCase() : "",
-    certificateDn: certDnLine ? certDnLine.split(": ").slice(1).join(": ").trim() : "",
+    certificateSha256: certValue("SHA-256 digest").toLowerCase(),
+    certificateDn: certValue("DN"),
   };
 }
 

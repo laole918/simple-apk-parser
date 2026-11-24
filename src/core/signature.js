@@ -57,11 +57,16 @@ export function createSignatureTools({ runtime, utf8Decoder, zipTools }) {
     return map;
   }
 
-  function parseV2OrV3CertDer(block) {
+  function parseV2OrV3CertDer(block, scheme) {
     const r = new ByteReader(block);
     const signers = r.readLenPrefixed();
     const signersR = new ByteReader(signers);
-    const signer = signersR.readLenPrefixed();
+    let signer = signersR.readLenPrefixed();
+    if (scheme === "v3") {
+      while (signersR.remaining()) {
+        signer = signersR.readLenPrefixed();
+      }
+    }
     const signerR = new ByteReader(signer);
     const signedData = signerR.readLenPrefixed();
     const signedR = new ByteReader(signedData);
@@ -274,7 +279,7 @@ export function createSignatureTools({ runtime, utf8Decoder, zipTools }) {
     }
 
     try {
-      const certDer = parseV2OrV3CertDer(pairs.get(schemeId));
+      const certDer = parseV2OrV3CertDer(pairs.get(schemeId), scheme);
       return await certificateSignature(scheme, certDer);
     } catch {
       return missingSignature(scheme);

@@ -21,4 +21,6 @@ The parser wraps local Blob input and remote URLs as ZIP sources, then runs the 
 
 [`normalizeParseOptions`](../../../src/core/types.js) handles resource loading and locale defaults. [`resources.js`](../../../src/core/resources.js) resolves metadata and can return a `bigint` for `versionCode`. Handle both `number` and `bigint` in consumers. The `signatures` result reports detection and certificate extraction by [`signature.js`](../../../src/core/signature.js). Use a signature verification tool such as `apksigner` for strict APK verification, as described in the [README](../../../README.md).
 
+The v3 entry's `certificate` summarizes the final signer in v3.0 signing-block order, matching the `apksigner` v3.0 summary. The v2 entry uses the first signer. When testing v3 certificate selection, use distinct certificates for the first and final signers and assert the final signer's fingerprint.
+
 The JavaScript parser uses runtime checks at its boundaries. `createParser` checks capabilities at construction, and binary and ZIP readers report invalid or unsupported data. Keep error messages actionable and test observable behavior.

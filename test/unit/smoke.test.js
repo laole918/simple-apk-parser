@@ -11,8 +11,51 @@ import { createBrowserParser } from "../../src/browser.js";
 import { createZipTools } from "../../src/core/zip.js";
 import { createResourceTools } from "../../src/core/resources.js";
 import { digestHexWithRuntime } from "../../src/core/binary.js";
+import { createSignatureTools } from "../../src/core/signature.js";
+import { createHash } from "node:crypto";
 
 describe("public API", () => {
+  it("selects the final v3 signer and the first v2 signer", async () => {
+    const lengthPrefixed = bytes => {
+      const result = new Uint8Array(4 + bytes.length);
+      new DataView(result.buffer).setUint32(0, bytes.length, true);
+      result.set(bytes, 4);
+      return result;
+    };
+    const signer = certificate => lengthPrefixed(lengthPrefixed(new Uint8Array([
+      ...lengthPrefixed(new Uint8Array()),
+      ...lengthPrefixed(lengthPrefixed(certificate)),
+    ])));
+    const first = new Uint8Array([1, 2, 3]);
+    const last = new Uint8Array([4, 5, 6]);
+    const signers = lengthPrefixed(new Uint8Array([...signer(first), ...signer(last)]));
+    const pair = id => {
+      const bytes = new Uint8Array(12 + signers.length);
+      const view = new DataView(bytes.buffer);
+      view.setBigUint64(0, BigInt(4 + signers.length), true);
+      view.setUint32(8, id, true);
+      bytes.set(signers, 12);
+      return bytes;
+    };
+    const block = new Uint8Array([
+      ...new Uint8Array(8), ...pair(0xf05368c0), ...pair(0x7109871a), ...new Uint8Array(24),
+    ]);
+    const tools = createSignatureTools({
+      runtime: createNodeRuntime(),
+      utf8Decoder: new TextDecoder(),
+      zipTools: {},
+    });
+    const signatures = await tools.parseSourceApkSignatures({
+      ensureZipInfo: async () => ({ centralDirOff: 0 }),
+      readSigningBlock: async () => block,
+      findEntryFromEnd: async () => null,
+      findEntry: async () => null,
+    });
+
+    expect(signatures[0].certificate.sha256).toBe(createHash("sha256").update(last).digest("hex"));
+    expect(signatures[1].certificate.sha256).toBe(createHash("sha256").update(first).digest("hex"));
+  });
+
   it("exposes the public functions", () => {
     expect(typeof parseApkFile).toBe("function");
     expect(typeof parseApkUrl).toBe("function");

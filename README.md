@@ -192,6 +192,8 @@ Typical result:
 
 Signature fields indicate that the parser detected the corresponding signature structure and extracted its certificate information. They are not intended to mean the APK would necessarily pass strict verification by `apksigner` or `jarsigner`.
 
+For a v3.0 signing block with multiple signers, `certificate` reports the final signer in block order. This matches the v3.0 certificate summary from `apksigner verify --print-certs`.
+
 ## Browser requirements
 
 Modern bundlers should pick the browser ESM build automatically through the package `browser` export condition. For direct `<script>` usage, the IIFE bundles remain available at `dist/simple-apk-parser.iife.js` and `dist/simple-apk-parser.iife.min.js`.
