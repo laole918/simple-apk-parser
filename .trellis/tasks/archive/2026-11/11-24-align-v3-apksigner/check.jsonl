@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/frontend/parser-runtime.md", "reason": "Shared parser/runtime and public result contracts"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Unit, build, and APK validation workflows"}
